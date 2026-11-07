@@ -1,0 +1,44 @@
+name: Colibri 5G S24 APK
+on:
+  push:
+    branches:
+      - feat/colibri5g-s24-apk
+    paths:
+      - 'mobile/colibri5g-s24/**'
+      - '.github/workflows/colibri-5g-apk.yml'
+  pull_request:
+    paths:
+      - 'mobile/colibri5g-s24/**'
+      - '.github/workflows/colibri-5g-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Install Android API
+        run: |
+          echo "y" | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35" "build-tools;35.0.0" || true
+      - name: Assemble debug APK
+        working-directory: mobile/colibri5g-s24
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+      - name: Verify built APK
+        run: |
+          test -s mobile/colibri5g-s24/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum mobile/colibri5g-s24/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: colibri5g-s24-debug-apk
+          path: mobile/colibri5g-s24/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
